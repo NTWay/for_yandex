@@ -1,3 +1,2 @@
 # for_yandex
-prog for internship
-Первая попавшаяся программа на C++
+example of programm for internship
