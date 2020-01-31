@@ -1,0 +1,361 @@
+/*
+ Submit a solution for 6.1-Поиск множеств
+Full score:	120
+Run penalty:	1
+Score bonus:	
+Time limit:	1 s
+Real time limit:	5 s
+Memory limit:	64M
+Stack limit:	4M
+Поиск множеств
+В первой строке файла содержится три числа: N - количество эталонных множеств, M - размер каждого из множеств и K - количество пробных множеств.
+
+Каждое из множеств содержит целые числа от 0 до 10^8, числа могут повторяться.
+
+Требуется для каждого из пробных множеств вывести в отдельной строке 1, если это множество в точности совпадает с каким-либо из эталонных множеств и 0, если оно ни с одним не совпадает, то есть, выведено должно быть в точности K строк.
+
+5 ⩽ N ⩽ 50000
+
+3 ⩽ M ⩽ 1000
+
+5 ⩽ K ⩽ 50000
+
+Examples
+Input
+10 3 5 
+6 5 1
+7 9 3
+2 3 2
+7 2 9
+9 6 2
+6 6 6
+9 4 1
+8 4 4
+8 3 2
+1 2 6
+9 7 2 
+1 6 5 
+3 7 7 
+4 4 6 
+3 9 7 
+    
+Output
+1 
+1 
+0 
+0 
+1
+    
+Input
+10 7 5 
+8 4 0 3 6 9 2 
+3 5 0 4 3 1 1  
+7 1 0 3 1 2 4 
+7 1 5 1 5 5 1 
+3 4 0 0 3 4 0 
+3 3 3 6 3 9 3 
+3 4 1 3 1 8 1 
+1 1 6 8 6 8 2 
+5 6 8 1 3 9 3 
+7 5 7 1 4 0 3 
+1 1 3 3 8 4 1 
+2 1 1 6 6 8 8 
+1 1 5 7 5 1 5 
+3 4 1 3 1 1 8 
+0 0 1 2 8 2 6
+     
+Output
+1 
+1 
+1 
+1 
+0
+ */
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct node_for_tree{
+	struct node_for_tree *right, *left;
+	int data;
+} node;
+
+node * Find_node(node *t, int key) 
+{
+	while(t){
+		if(t->data > key){
+			t = t->left;
+			continue;
+		} else if (t->data < key) {
+			t = t->right;
+			continue;
+		} else
+			return t;
+	}
+	return NULL;
+}
+
+node * searchNode(node *t, int key) /*equal Find_node*/
+{
+	node *p = t;
+	while(t){
+		p = t;
+		if(t->data == key) return t;
+		t = key > t->data? t->right : t->left;
+	}
+	return p;
+}
+
+int Hight_tree(const node *root) /*for AVL trees*/
+{
+	int h1, h2; 
+	if(!root) 
+		return 0;
+	else {
+		if(root->left) h1 = Hight_tree(root->left);
+		else h1 = 0;
+		if(root->right) h2 = Hight_tree(root->right);
+		else h2 = 0;
+		return (h1 > h2 ? h1 : h2) + 1;
+	}
+}
+
+node * rotateRight(node *root)
+{
+	node *tmp = root;
+	root = root->left;
+	tmp->left = root->right;
+	root->right = tmp;
+	return root;
+}
+
+node * rotateLeft(node *root)
+{
+	node *tmp = root->right;
+	root->right = tmp->left;
+	tmp->left = root;
+	return tmp;
+}
+
+int BFactor(node *root) /*if add in struct node_for_tree field 'hight' alg will be faster*/
+{
+	return Hight_tree(root->right)-Hight_tree(root->left);
+}
+
+node * Balance(node *root)
+{
+	if(BFactor(root) == 2){
+		if(BFactor(root->right) < 0)
+			root->right = rotateRight(root->right);
+		return rotateLeft(root);
+	}else if(BFactor(root) == -2){
+		if(BFactor(root->left) > 0)
+			root->left = rotateLeft(root->left);
+		return rotateRight(root);
+	}else
+	return(root);
+}
+
+void Insert_node(node **root, int key)
+{
+        if(!*root){
+                *root = malloc(sizeof(node));
+                (*root)->data = key;
+                (*root)->right = NULL;
+                (*root)->left = NULL;
+                return;
+        }
+        if((*root)->data == key)
+                return;
+        if((*root)->data < key)
+                Insert_node(&(*root)->right, key);
+        else
+            	Insert_node(&(*root)->left, key);
+	*root = Balance(*root);
+}
+void Out_tree(node *t, int space)
+{
+        if(!t)
+                return;
+        Out_tree(t->right, space + 1);
+        for(int i = 0; i < space; ++i)
+                printf("  ");
+        printf("%d\n", t->data);
+        Out_tree(t->left, space + 1);
+}
+
+int Equal_set(int *arr, node *q, int M)/*go through array and search elems in Q*/ 
+{
+	/*  
+	//ALG for 2 sets
+	int flag = 1;
+	if(!p && !q)
+	       return 1;
+	if(p && q){
+		return(p->data == q->data &&
+			Equal_set(p->left, q->left) &&
+			Equal_set(p->right, q->right));
+	}
+	return 0;	
+	*/
+	for(int i = 0; i < M; i++)
+		if(NULL == Find_node(q, arr[i]))
+			return 0;
+	return 1;
+
+}
+
+void Delete_tree(node *root)
+{
+	if(!root)
+		return;
+	Delete_tree(root->right);
+	Delete_tree(root->left);
+	free(root);
+}
+
+node * Max_node(node *t)
+{
+        if(!t) return NULL;
+        while(t->right)
+                t = t->right;
+        return t;
+}
+
+node * Min_node(node *t)
+{
+        if(!t) return NULL;
+        while(t->left)
+                t = t->left;
+        return t;
+}
+
+node * deleteNode(node *root, int key) {
+    if (!root) {
+        return NULL;
+    }
+    if (root->data > key) {
+        root->left = deleteNode(root->left, key);
+        return Balance(root);
+    } else if (root->data < key) {
+        root->right = deleteNode(root->right, key);
+        return Balance(root);
+    } else {    /*find node with correct key*/
+        if (root->left && root->right) { /* 2 childrens*/
+            node *locMin = Min_node(root->right);
+            root->data = locMin->data;
+            root->right = deleteNode(root->right, root->data);
+            return Balance(root);
+        } else if (root->left) { /*left child*/
+            node *tmp = root->left;
+            free(root);
+	    tmp = tmp;
+            return tmp;
+        } else if (root->right) {/*right child*/
+            node *tmp = root->right;
+            free(root);
+	    tmp = tmp;
+            return tmp;
+        } else { /*No childrens*/
+            free(root);
+            return NULL;
+        }
+    }
+}
+
+int main(int argc, char **argv)
+{
+	enum { 
+		N_limit = 50000,
+		M_limit = 1000,
+	     	K_limit = 50000,
+		first_line_chars = 16,
+		elem_limit = 100000000,
+		elem_limit_chars = 9
+	};
+	char buf[M_limit], set_IN_SetOfSets = '0';
+	node **SetOfSets; /*set of sets*/
+	//node *set; /*read set from K*/
+	FILE *f1, *f2;
+	int N, M, K, c, number = 0, count_of_numb, i = 0, j = 0; //count_of_numbers_in_string
+	if(argc < 3){
+		printf("Too few arguments");
+		return 1;
+	}
+	
+	f1 = fopen(argv[1], "r");
+	if(!f1){
+		perror(argv[1]);
+		return 2;
+	}
+	f2 = fopen(argv[2], "w");
+	if(!f2){
+		perror(argv[2]);
+		return 3;
+	}
+	
+	fgets(buf, sizeof(buf), f1); // enter N, M, K
+	//printf("str = %s", buf); 
+	i = 0;
+	for(j = 0; j < 3; j++, i++){
+		number = 0;
+		while(buf[i] <= '9' && buf[i] >= '0' && buf[i] != '\0'){	
+			number *= 10;
+			number += buf[i]-'0';
+			i++;
+		}	
+		if(j == 0) N = number;
+		if(j == 1) M = number;
+		if(j == 2) K = number;	
+	}
+	
+	
+
+	j = 0; // enter sets
+	count_of_numb = 0; c = 0;
+	int *set = malloc(M * sizeof(int));
+	SetOfSets = malloc(M * N * sizeof(node));
+	SetOfSets[0] = malloc(M * sizeof(node));
+	SetOfSets[0] = NULL;
+
+	while(j < N+K && c != EOF){
+		number = 0;
+                while((c = fgetc(f1)) <= '9' && c >= '0'){ // fill set
+                        number *= 10;
+                        number += c - '0';
+                }
+
+		//ADD ELEMENT 'number'
+		if(j < N && count_of_numb < M){
+			Insert_node(&SetOfSets[j], number);
+		}
+		else if(j < N+K && count_of_numb < M){
+			//Insert_node(&set, number); // if set = tree 
+			set[count_of_numb] = number;
+		}
+		
+		count_of_numb++;
+		if(c == '\n'){ //fill next set
+			//printf("Set %d consist of : \n", j+1);
+			if(j >= N){
+				set_IN_SetOfSets = '0';
+				for(int k = 0; k < N; k++){			
+					//printf("\n");
+					if(Equal_set(set, SetOfSets[k], M)){
+						set_IN_SetOfSets = '1';
+						break;
+					}
+				}
+				fputc(set_IN_SetOfSets, f2);	
+				fputc('\n', f2);
+				//set = NULL; // if set = tree
+				//Delete_tree(set);//Without that func will be memory leak!(if set = tree)
+			} 
+			j++;
+			count_of_numb = 0;
+		}
+	}
+ 	
+	fclose(f1);
+	fclose(f2);
+	return 0;
+}
